@@ -1,0 +1,32 @@
+rules_version = '2';
+
+// Yemame OPOS Storage rules.
+//
+// The bucket holds the desktop app's release artifacts: installers (mac .dmg,
+// Windows .exe/.msi) and the version manifest (latest.json) the in-app updater
+// fetches. These must be PUBLICLY READABLE (the updater is unauthenticated and
+// runs on every customer's machine) but writable ONLY by an admin (so nobody can
+// replace an installer with malware).
+//
+// Writes happen via the Admin SDK (Hub upload function / CLI), which bypasses
+// these rules. The `admin:true` custom-claim branch lets a trusted Hub admin
+// upload directly from a signed-in client too. Everything else is denied.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Public release artifacts: world-readable, admin-writable only.
+    match /releases/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Everything else is closed. Add explicit matches for any future buckets.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

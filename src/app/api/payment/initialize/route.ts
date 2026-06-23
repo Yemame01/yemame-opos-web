@@ -1,0 +1,90 @@
+// src/app/api/payment/initialize/route.ts
+// Start a license purchase. SECURITY: the buyer's identity comes from a VERIFIED
+// Firebase ID token (Authorization: Bearer), NOT a client-sent uid — so a caller
+// can never mint a license to someone else's account. The SERVER re-reads the
+// package price from Firestore (never trusts a client amount), then creates the
+// Paystack transaction with the verified uid + packageId in the metadata so the
+// webhook can mint the license to the right account.
+
+import { NextRequest, NextResponse } from "next/server";
+import { initializeTransaction } from "@/lib/paystackServer";
+import { verifyIdToken, bearerToken } from "@/lib/verifyIdToken";
+import { siteUrl } from "@/lib/siteUrl";
+
+// Read the package straight from Firestore via the REST API (packages are
+// world-readable). Keeps this route dependency-light.
+async function getPackage(
+  packageId: string,
+): Promise<{ priceMinor: number; active: boolean } | null> {
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/packages/${encodeURIComponent(
+    packageId,
+  )}`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) return null;
+  const doc = await res.json();
+  const f = doc.fields || {};
+  return {
+    priceMinor: Number(
+      f.priceMinor?.integerValue ?? f.priceMinor?.doubleValue ?? 0,
+    ),
+    active: f.active?.booleanValue === true,
+  };
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    // ── Authenticate the buyer from the ID token (never trust a body uid) ──
+    const user = await verifyIdToken(bearerToken(request));
+    if (!user) {
+      return NextResponse.json(
+        { error: "Please sign in again to continue." },
+        { status: 401 },
+      );
+    }
+
+    const { packageId } = await request.json();
+    if (!packageId) {
+      return NextResponse.json(
+        { error: "packageId is required." },
+        { status: 400 },
+      );
+    }
+
+    const pkg = await getPackage(packageId);
+    if (!pkg || !pkg.active) {
+      return NextResponse.json(
+        { error: "That package is unavailable." },
+        { status: 400 },
+      );
+    }
+
+    // A zero-price package can't be sold (placeholder not yet priced).
+    if (pkg.priceMinor <= 0) {
+      return NextResponse.json(
+        {
+          error:
+            "This package has no price set yet. Please set a price in the admin before selling.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const data = await initializeTransaction({
+      email: user.email,
+      amountMinor: pkg.priceMinor,
+      // product:"opos" lets the shared gateway route this charge to yemame-opos.
+      // uid is the VERIFIED uid — the webhook mints to exactly this account.
+      metadata: { product: "opos", type: "opos_license", uid: user.uid, packageId },
+      callbackUrl: `${siteUrl()}/api/payment/callback`,
+    });
+
+    return NextResponse.json({
+      authorization_url: data.authorization_url,
+      reference: data.reference,
+    });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Internal error";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}

@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+functions/node_modules/
+
+# next
+.next/
+out/
+
+# env / secrets
+.env
+.env.local
+.env*.local
+service-account*.json
+*-service-account.json
+
+# build output
+functions/lib/
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# misc
+.DS_Store
+*.local
+.vercel

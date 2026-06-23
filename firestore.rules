@@ -1,0 +1,76 @@
+rules_version = '2';
+
+// Yemame OPOS licensing/store Firestore rules.
+//
+// Principle: all money- and license-bearing writes go through Cloud Functions
+// (Admin SDK bypasses these rules). Clients get LEAST privilege:
+//   • a signed-in buyer reads ONLY their own user doc, payments, and licenses
+//   • packages are world-readable (the store needs prices before sign-in)
+//   • nobody writes licenses/payments/packages from the client — ever
+//   • adminLogs are completely closed to clients
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // ---- Packages: public read (store pricing). Writes via admin only. ----
+    match /packages/{packageId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ---- Users: a buyer reads/edits only their own profile doc. ----
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      // Allow creating/updating the buyer's own profile (name/phone). Licenses
+      // and payments are NOT here — they live in their own collections.
+      allow create, update: if isOwner(uid);
+      allow delete: if false;
+
+      // Buyer-visible payment history (written by the webhook via Admin SDK).
+      match /payments/{reference} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+    }
+
+    // ---- Licenses: a buyer reads their own; all writes via Cloud Functions. ----
+    match /licenses/{licenseId} {
+      allow read: if signedIn()
+        && resource.data.ownerUid == request.auth.uid;
+      allow write: if false;
+
+      // Activation audit rows: owner may read, never write.
+      match /activations/{activationId} {
+        allow read: if signedIn()
+          && get(/databases/$(database)/documents/licenses/$(licenseId)).data.ownerUid == request.auth.uid;
+        allow write: if false;
+      }
+    }
+
+    // ---- Global payments (audit): closed to clients. ----
+    match /payments/{reference} {
+      allow read, write: if false;
+    }
+
+    // ---- Config + admin logs: closed to clients. ----
+    match /config/{doc} {
+      allow read: if true;   // non-secret store config (currency, support link)
+      allow write: if false;
+    }
+    match /adminLogs/{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---- Rate-limit counters: server-only (activation throttling). ----
+    // Set a Firestore TTL policy on `rateLimits.expireAt` to auto-clean windows.
+    match /rateLimits/{doc} {
+      allow read, write: if false;
+    }
+  }
+}

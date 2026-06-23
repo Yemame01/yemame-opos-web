@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  @apply overflow-x-clip bg-[#f7faf9] text-ink antialiased;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+@layer utilities {
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .animate-fade-up {
+    animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .animate-floaty {
+    animation: floaty 4s ease-in-out infinite;
+  }
+  .delay-100 { animation-delay: 0.1s; }
+  .delay-200 { animation-delay: 0.2s; }
+  .delay-300 { animation-delay: 0.3s; }
+  .delay-500 { animation-delay: 0.5s; }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl bg-white shadow-soft border border-black/[0.04];
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-teal-500 px-4 py-2.5 font-semibold text-white transition hover:bg-teal-600 disabled:opacity-60;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-teal-500/30 px-4 py-2.5 font-semibold text-teal-600 transition hover:bg-teal-50;
+  }
+  /* Big rounded-full CTAs for the landing (matches the Yemame family look). */
+  .cta-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-teal-600 px-7 py-3.5 font-bold text-white shadow-xl shadow-teal-600/20 transition-all hover:-translate-y-0.5 hover:bg-teal-700 hover:shadow-2xl hover:shadow-teal-600/25;
+  }
+  .cta-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border-2 border-black/10 bg-white px-7 py-3.5 font-bold text-ink transition-all hover:-translate-y-0.5 hover:border-black/20;
+  }
+  .eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-700;
+  }
+  .field {
+    @apply w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink/70;
+  }
+}
