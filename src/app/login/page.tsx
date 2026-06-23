@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { Brand } from "@/components/Brand";
+import { AuthShell } from "@/components/AuthShell";
 
 export default function LoginPage() {
   const { signIn } = useAuth();
@@ -29,12 +30,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-5">
+    <AuthShell>
       <div className="card w-full max-w-sm p-7">
         <Link href="/" className="block text-center">
           <Brand className="text-xl" />
         </Link>
         <h1 className="mt-5 text-center text-xl font-bold">Welcome back</h1>
+        <p className="mt-1 text-center text-sm text-ink/55">
+          Log in to manage your licenses.
+        </p>
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div>
             <label className="label">Email</label>
@@ -77,6 +81,6 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
-    </div>
+    </AuthShell>
   );
 }

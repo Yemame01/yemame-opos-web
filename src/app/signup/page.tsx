@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { Brand } from "@/components/Brand";
+import { AuthShell } from "@/components/AuthShell";
 
 export default function SignupPage() {
   const { signUp } = useAuth();
@@ -39,7 +40,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-5">
+    <AuthShell>
       <div className="card w-full max-w-sm p-7">
         <Link href="/" className="block text-center">
           <Brand className="text-xl" />
@@ -101,6 +102,6 @@ export default function SignupPage() {
           </Link>
         </p>
       </div>
-    </div>
+    </AuthShell>
   );
 }

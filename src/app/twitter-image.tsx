@@ -7,6 +7,6 @@ export const alt = "Yemame OPOS — Offline Point of Sale for Shops";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function TwitterImage() {
+export default async function TwitterImage() {
   return OgImage();
 }
