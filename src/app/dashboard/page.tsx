@@ -4,13 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Copy, Check, Plus, KeyRound } from "lucide-react";
-import {
-  collection,
-  onSnapshot,
-  query,
-  where,
-  orderBy,
-} from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { firebaseReady, requireDb } from "@/lib/firebase";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -129,10 +123,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user || !firebaseReady) return;
+    // Each buyer's licenses live under their own account doc (POS-style nesting).
     const unsub = onSnapshot(
       query(
-        collection(requireDb(), "licenses"),
-        where("ownerUid", "==", user.uid),
+        collection(requireDb(), "users", user.uid, "licenses"),
         orderBy("createdAt", "desc"),
       ),
       (snap) => {

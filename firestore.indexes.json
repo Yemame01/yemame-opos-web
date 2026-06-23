@@ -23,14 +23,6 @@
         { "fieldPath": "deviceId", "order": "ASCENDING" },
         { "fieldPath": "active", "order": "ASCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "packages",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "active", "order": "ASCENDING" },
-        { "fieldPath": "sortOrder", "order": "ASCENDING" }
-      ]
     }
   ],
   "fieldOverrides": []

@@ -3,19 +3,19 @@
 // On a verified `charge.success`, mint an OPOS license. Mirrors yemame-pos's
 // charge-success discipline:
 //   1. IDEMPOTENCY — skip if payments/{reference} already exists.
-//   2. AMOUNT VALIDATION — recompute the expected price from packages/{id}
-//      server-side; a mismatch is a security incident → log + reject (never trust
-//      the client-sent amount).
-//   3. DUAL RECORD — payments/{ref} (audit) + users/{uid}/payments/{ref} (history).
-//   4. ISSUE — generate the key + create licenses/{id} with maxActivations = N.
+//   2. AMOUNT VALIDATION — recompute the expected price from
+//      adminConfig/general.packages server-side; a mismatch is a security
+//      incident → log + reject (never trust the client-sent amount).
+//   3. DUAL RECORD — global payments/{ref} (audit) + users/{uid}/payments/{ref}.
+//   4. ISSUE — generate the key + write the license (per-user + global mirror).
 //
-// Prices live in packages/{id}.priceMinor (minor units). They DEFAULT to 0 until
-// real prices are set; a 0-price package therefore expects a 0 charge, which is
-// fine for test mode and prevents accidental free issuance once prices are set.
+// Prices live in adminConfig/general.packages[].priceMinor (minor units),
+// admin-managed via Hub. A 0-price package is "not sellable" and never mints.
 
 import * as admin from "firebase-admin";
 import { PaystackWebhookEvent } from "../types";
 import { getDb, logAdmin } from "../../../utils/db";
+import { getPackage } from "../../../config/packages";
 import { issueLicense } from "../../../licensing/issueLicense";
 import { notifyHub, reportServerError } from "../../../services/hubNotify";
 
@@ -64,18 +64,13 @@ export async function handleChargeSuccess(
       return;
     }
 
-    // ---------- 2. AMOUNT VALIDATION (server-side price) ----------
-    const pkgSnap = await db.collection("packages").doc(packageId).get();
-    if (!pkgSnap.exists) {
+    // ---------- 2. AMOUNT VALIDATION (server-side price from adminConfig) ----------
+    const pkg = await getPackage(packageId);
+    if (!pkg) {
       console.error(`[Paystack] Unknown package ${packageId}`);
       await logAdmin("security", "unknown_package", { reference, packageId });
       return;
     }
-    const pkg = pkgSnap.data() as {
-      priceMinor?: number;
-      activations?: number;
-      active?: boolean;
-    };
     const expectedMinor = Number(pkg.priceMinor) || 0;
     const activations = Number(pkg.activations) || 0;
 

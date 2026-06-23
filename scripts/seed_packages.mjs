@@ -1,57 +1,37 @@
 // scripts/seed_packages.mjs
 //
-// Seed the OPOS store's packages collection with DEFAULT placeholders.
-// Prices default to 0 (not sellable until you set real prices) so we never ship
-// accidental free licenses. Set real GHS prices later (priceMinor = pesewas).
+// Seed adminConfig/general with the store config + a default packages array.
+// Prices default to 0 (not sellable) so we never ship accidental free licenses.
+// Set real GHS prices with scripts/set_package_prices.sh or the Hub UI.
 //
 //   GOOGLE_APPLICATION_CREDENTIALS=./service-account.json \
 //   node scripts/seed_packages.mjs
 //
 // Requires a service-account key for the yemame-opos project (admin access).
 
-import { initializeApp, cert, applicationDefault } from "firebase-admin/app";
+import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
-initializeApp({
-  credential: process.env.GOOGLE_APPLICATION_CREDENTIALS
-    ? applicationDefault()
-    : applicationDefault(),
-});
-
+initializeApp({ credential: applicationDefault() });
 const db = getFirestore();
 
 const PACKAGES = [
-  { id: "act1", name: "Single", activations: 1, sortOrder: 1 },
-  { id: "act3", name: "Triple", activations: 3, sortOrder: 2 },
-  { id: "act5", name: "Five", activations: 5, sortOrder: 3 },
-  { id: "act10", name: "Ten", activations: 10, sortOrder: 4 },
+  { id: "act1", name: "Solo", activations: 1, priceMinor: 0, currency: "GHS", active: true, sortOrder: 1 },
+  { id: "act2", name: "Duo", activations: 2, priceMinor: 0, currency: "GHS", active: true, sortOrder: 2 },
+  { id: "act3", name: "Trio", activations: 3, priceMinor: 0, currency: "GHS", active: true, sortOrder: 3 },
+  { id: "act4", name: "Squad", activations: 4, priceMinor: 0, currency: "GHS", active: true, sortOrder: 4 },
+  { id: "act5", name: "Crew", activations: 5, priceMinor: 0, currency: "GHS", active: true, sortOrder: 5 },
 ];
 
-for (const p of PACKAGES) {
-  await db.collection("packages").doc(p.id).set(
-    {
-      name: p.name,
-      activations: p.activations,
-      priceMinor: 0, // DEFAULT — set a real price before selling
-      currency: "GHS",
-      active: true,
-      sortOrder: p.sortOrder,
-      updatedAt: FieldValue.serverTimestamp(),
-    },
-    { merge: true },
-  );
-  console.log(`seeded package ${p.id} (${p.activations} activations)`);
-}
-
-// Non-secret store config.
-await db.collection("config").doc("general").set(
+await db.doc("adminConfig/general").set(
   {
     currency: "GHS",
     supportWhatsapp: "+233559760063",
+    packages: PACKAGES,
     updatedAt: FieldValue.serverTimestamp(),
   },
   { merge: true },
 );
-console.log("seeded config/general");
-console.log("Done.");
+console.log("seeded adminConfig/general (config + packages, prices default 0)");
+console.log("Set real prices via scripts/set_package_prices.sh --apply or the Hub UI.");
 process.exit(0);

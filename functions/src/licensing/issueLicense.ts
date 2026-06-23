@@ -1,12 +1,14 @@
 // functions/src/licensing/issueLicense.ts
 //
-// Creates a license document with a fresh key. Used by the Paystack webhook
-// (after a verified payment) and by manual/admin issuance. Generates a unique
-// key (retrying on the astronomically unlikely collision).
+// Creates a license. Used by the Paystack webhook (after a verified payment) and
+// by manual/admin issuance. The license is written to BOTH the per-user path
+// (users/{uid}/licenses/{id}) and the global mirror (licenses/{id}) so each
+// buyer's data lives under their own account while activation/admin can still
+// look it up by key. Generates a unique key (retry on the astronomical clash).
 
-import * as admin from "firebase-admin";
 import { getDb } from "../utils/db";
 import { generateLicenseKey } from "./keygen";
+import { writeLicenseBoth } from "./licenseRefs";
 
 export interface IssueLicenseParams {
   ownerUid: string;
@@ -29,19 +31,22 @@ export interface IssuedLicense {
   key: string;
 }
 
-/** Create a new license and return its id + key. */
+/** Create a new license (nested + global mirror) and return its id + key. */
 export async function issueLicense(
   params: IssueLicenseParams,
 ): Promise<IssuedLicense> {
   const db = getDb();
-  const licenses = db.collection("licenses");
 
-  // Generate a key, ensuring uniqueness. Collisions are effectively impossible
-  // (32^16 space) but we guard anyway.
+  // Generate a key, ensuring global uniqueness. Collisions are effectively
+  // impossible (32^16 space) but we guard anyway.
   let key = "";
   for (let attempt = 0; attempt < 5; attempt++) {
     const candidate = generateLicenseKey();
-    const clash = await licenses.where("key", "==", candidate).limit(1).get();
+    const clash = await db
+      .collection("licenses")
+      .where("key", "==", candidate)
+      .limit(1)
+      .get();
     if (clash.empty) {
       key = candidate;
       break;
@@ -51,11 +56,14 @@ export async function issueLicense(
     throw new Error("Could not generate a unique license key after 5 attempts.");
   }
 
-  const ref = licenses.doc();
-  await ref.set({
+  // One id shared by both copies (auto-generated from the global collection).
+  const licenseId = db.collection("licenses").doc().id;
+
+  const batch = db.batch();
+  writeLicenseBoth(batch, {
+    id: licenseId,
     key,
     ownerUid: params.ownerUid,
-    // Normalized so activation's email check is case/space-insensitive.
     buyerEmail: (params.buyerEmail || "").trim().toLowerCase(),
     productCode: "OPOS",
     tier: params.tier || "standard",
@@ -65,8 +73,8 @@ export async function issueLicense(
     packageId: params.packageId,
     paymentRef: params.paymentRef ?? null,
     source: params.source,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
+  await batch.commit();
 
-  return { licenseId: ref.id, key };
+  return { licenseId, key };
 }

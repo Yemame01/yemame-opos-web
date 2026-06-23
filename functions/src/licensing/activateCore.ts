@@ -74,6 +74,9 @@ export async function activateCore(
   const db = getDb();
 
   const result = await db.runTransaction(async (tx) => {
+    // Look the license up by key on the GLOBAL MIRROR (the only place we can find
+    // it without knowing the buyer's uid). Activations live on the mirror; the
+    // per-user copy (users/{uid}/licenses/{id}) is kept in sync for the counters.
     const snap = await tx.get(
       db.collection("licenses").where("key", "==", key).limit(1),
     );
@@ -83,7 +86,8 @@ export async function activateCore(
         "We couldn't find that license key. Please check it and try again.",
       );
     }
-    const licenseRef = snap.docs[0]!.ref;
+    const mirrorRef = snap.docs[0]!.ref;
+    const licenseId = mirrorRef.id;
     const license = snap.docs[0]!.data() as {
       status?: string;
       maxActivations?: number;
@@ -91,11 +95,12 @@ export async function activateCore(
       tier?: string;
       productCode?: string;
       buyerEmail?: string;
+      ownerUid?: string;
     };
+    const ownerUid = String(license.ownerUid || "");
 
     // The purchase email must match the key. A leaked/shared key alone can't be
-    // activated without the email it was bought with. (Legacy licenses with no
-    // buyerEmail recorded skip this check.)
+    // activated without the email it was bought with.
     const buyerEmail = (license.buyerEmail || "").trim().toLowerCase();
     if (buyerEmail && buyerEmail !== email) {
       throw new ActivationError(
@@ -115,7 +120,7 @@ export async function activateCore(
     const activationsUsed = Number(license.activationsUsed) || 0;
 
     const existing = await tx.get(
-      licenseRef
+      mirrorRef
         .collection("activations")
         .where("deviceId", "==", deviceId)
         .where("active", "==", true)
@@ -139,7 +144,7 @@ export async function activateCore(
         reactivatedAt: now,
       });
     } else {
-      const activationRef = licenseRef.collection("activations").doc();
+      const activationRef = mirrorRef.collection("activations").doc();
       tx.set(activationRef, {
         deviceId,
         deviceLabel,
@@ -148,14 +153,26 @@ export async function activateCore(
         active: true,
         activatedAt: now,
       });
-      tx.update(licenseRef, {
+      // Bump the counter on BOTH the mirror and the per-user copy so they agree.
+      const bump = {
         activationsUsed: admin.firestore.FieldValue.increment(1),
         lastActivatedAt: now,
-      });
+      };
+      tx.update(mirrorRef, bump);
+      if (ownerUid) {
+        tx.update(
+          db
+            .collection("users")
+            .doc(ownerUid)
+            .collection("licenses")
+            .doc(licenseId),
+          bump,
+        );
+      }
     }
 
     const token = signLicenseToken({
-      licenseId: licenseRef.id,
+      licenseId,
       key,
       deviceId,
       productCode: license.productCode || "OPOS",
@@ -165,7 +182,7 @@ export async function activateCore(
 
     return {
       token,
-      licenseId: licenseRef.id,
+      licenseId,
       tier: license.tier || "standard",
       maxActivations,
       activationsUsed: isReactivation ? activationsUsed : activationsUsed + 1,

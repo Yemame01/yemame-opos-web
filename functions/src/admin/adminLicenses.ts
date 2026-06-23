@@ -39,6 +39,31 @@ export const adminListLicenses = onCall(heavyHttpOptions, async (request) => {
   };
 });
 
+/**
+ * Patch the same fields on BOTH license copies: the global mirror licenses/{id}
+ * and the per-user users/{ownerUid}/licenses/{id}. Reads the mirror to learn the
+ * owner. Throws if the license doesn't exist.
+ */
+async function patchLicenseBoth(
+  licenseId: string,
+  patch: Record<string, unknown>,
+): Promise<void> {
+  const db = getDb();
+  const mirrorRef = db.collection("licenses").doc(licenseId);
+  const snap = await mirrorRef.get();
+  if (!snap.exists) throw new HttpsError("not-found", "License not found.");
+  const ownerUid = String(snap.get("ownerUid") || "");
+  await mirrorRef.update(patch);
+  if (ownerUid) {
+    await db
+      .collection("users")
+      .doc(ownerUid)
+      .collection("licenses")
+      .doc(licenseId)
+      .update(patch);
+  }
+}
+
 /** Revoke a license. Blocks NEW activations; already-activated devices keep
  * running offline (validate-once model). */
 export const adminRevokeLicense = onCall(heavyHttpOptions, async (request) => {
@@ -48,11 +73,7 @@ export const adminRevokeLicense = onCall(heavyHttpOptions, async (request) => {
     reason?: string;
   };
   if (!licenseId) throw new HttpsError("invalid-argument", "licenseId required.");
-  const ref = getDb().collection("licenses").doc(licenseId);
-  if (!(await ref.get()).exists) {
-    throw new HttpsError("not-found", "License not found.");
-  }
-  await ref.update({
+  await patchLicenseBoth(licenseId, {
     status: "revoked",
     revokedAt: admin.firestore.FieldValue.serverTimestamp(),
     revokedReason: (reason || "").slice(0, 200),
@@ -67,11 +88,7 @@ export const adminRestoreLicense = onCall(heavyHttpOptions, async (request) => {
   const adminUid = assertAdmin(request);
   const { licenseId } = (request.data ?? {}) as { licenseId?: string };
   if (!licenseId) throw new HttpsError("invalid-argument", "licenseId required.");
-  const ref = getDb().collection("licenses").doc(licenseId);
-  if (!(await ref.get()).exists) {
-    throw new HttpsError("not-found", "License not found.");
-  }
-  await ref.update({
+  await patchLicenseBoth(licenseId, {
     status: "active",
     revokedAt: admin.firestore.FieldValue.delete(),
     revokedReason: admin.firestore.FieldValue.delete(),
@@ -96,8 +113,8 @@ export const adminAdjustActivations = onCall(
         "licenseId and a non-negative integer maxActivations are required.",
       );
     }
-    const ref = getDb().collection("licenses").doc(licenseId);
-    const doc = await ref.get();
+    const mirrorRef = getDb().collection("licenses").doc(licenseId);
+    const doc = await mirrorRef.get();
     if (!doc.exists) throw new HttpsError("not-found", "License not found.");
     const used = Number(doc.get("activationsUsed")) || 0;
     if (n < used) {
@@ -106,7 +123,7 @@ export const adminAdjustActivations = onCall(
         `Cannot set max (${n}) below activations already used (${used}).`,
       );
     }
-    await ref.update({ maxActivations: n });
+    await patchLicenseBoth(licenseId, { maxActivations: n });
     await logAdmin("licenses", "adjusted_activations", {
       licenseId,
       adminUid,

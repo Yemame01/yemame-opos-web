@@ -11,25 +11,30 @@ import { initializeTransaction } from "@/lib/paystackServer";
 import { verifyIdToken, bearerToken } from "@/lib/verifyIdToken";
 import { siteUrl } from "@/lib/siteUrl";
 
-// Read the package straight from Firestore via the REST API (packages are
-// world-readable). Keeps this route dependency-light.
+// Read the package from adminConfig/general.packages via the REST API (the
+// config doc is world-readable). Server re-derives the price — never trusts the
+// client amount.
 async function getPackage(
   packageId: string,
 ): Promise<{ priceMinor: number; active: boolean } | null> {
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/packages/${encodeURIComponent(
-    packageId,
-  )}`;
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/adminConfig/general`;
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) return null;
   const doc = await res.json();
-  const f = doc.fields || {};
-  return {
-    priceMinor: Number(
-      f.priceMinor?.integerValue ?? f.priceMinor?.doubleValue ?? 0,
-    ),
-    active: f.active?.booleanValue === true,
-  };
+  const values = doc.fields?.packages?.arrayValue?.values ?? [];
+  for (const v of values) {
+    const f = v.mapValue?.fields ?? {};
+    if (f.id?.stringValue === packageId) {
+      return {
+        priceMinor: Number(
+          f.priceMinor?.integerValue ?? f.priceMinor?.doubleValue ?? 0,
+        ),
+        active: f.active?.booleanValue === true,
+      };
+    }
+  }
+  return null;
 }
 
 export async function POST(request: NextRequest) {
