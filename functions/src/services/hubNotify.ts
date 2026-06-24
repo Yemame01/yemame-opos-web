@@ -125,3 +125,22 @@ export async function reportServerErrorAwaitable(
 export function reportWarning(title: string, body: string): void {
   void notifyHub({ title: `OPOS: ${title}`, body, type: "warning" });
 }
+
+/**
+ * Wrap an async handler so any UNEXPECTED error (not an HttpsError / ClientError)
+ * is reported to admins before being rethrown. Keeps callable handlers terse
+ * while guaranteeing failures alert. Expected client errors pass through silently.
+ */
+export function withErrorReport<A extends unknown[], R>(
+  context: string,
+  fn: (...args: A) => Promise<R>,
+): (...args: A) => Promise<R> {
+  return async (...args: A): Promise<R> => {
+    try {
+      return await fn(...args);
+    } catch (err) {
+      if (shouldAlert(err)) reportServerError(context, err);
+      throw err;
+    }
+  };
+}

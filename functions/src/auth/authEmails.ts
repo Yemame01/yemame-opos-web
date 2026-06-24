@@ -8,6 +8,7 @@ import * as admin from "firebase-admin";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { lightHttpOptions } from "../config/options";
 import { sendEmail } from "../services/email/send";
+import { reportServerError, reportWarning } from "../services/hubNotify";
 import {
   verifyEmailTemplate,
   passwordResetTemplate,
@@ -57,7 +58,14 @@ export const resendVerificationEmail = onCall(lightHttpOptions, async (req) => {
     "Verify your email — Yemame OPOS",
     verifyEmailTemplate(name, verifyUrlFrom(link)),
   );
-  if (!r.success) throw new HttpsError("internal", "Could not send email.");
+  if (!r.success) {
+    // Email delivery failing is an infra problem worth an admin alert.
+    reportWarning(
+      "verification email failed",
+      `Resend rejected the verification email for ${user.email}: ${r.error ?? "unknown"}`,
+    );
+    throw new HttpsError("internal", "Could not send email.");
+  }
   return { sent: true };
 });
 
@@ -83,7 +91,9 @@ export const requestPasswordReset = onCall(lightHttpOptions, async (req) => {
     // user-not-found etc. → stay silent to prevent enumeration.
     const code = (e as { code?: string })?.code || "";
     if (code !== "auth/user-not-found") {
-      console.error("[authEmails] reset send failed:", e);
+      // A genuine failure (link generation / Resend down) — alert admins, but
+      // still return ok below so we never reveal whether the account exists.
+      reportServerError("requestPasswordReset", e, { email });
     }
   }
   return { ok: true };
@@ -104,11 +114,19 @@ export const sendWelcomeEmail = onCall(lightHttpOptions, async (req) => {
   if (snap.exists && snap.data()?.welcomeSentAt) return { sent: false };
 
   const name = (user.displayName || "").split(" ")[0] || "";
-  await sendEmail(
+  const r = await sendEmail(
     user.email,
     "Welcome to Yemame OPOS! 🎉",
     welcomeTemplate(name),
   );
+  if (!r.success) {
+    // Best-effort: don't fail the caller, but flag delivery problems.
+    reportWarning(
+      "welcome email failed",
+      `Resend rejected the welcome email for ${user.email}: ${r.error ?? "unknown"}`,
+    );
+    return { sent: false };
+  }
   await ref.set(
     { welcomeSentAt: admin.firestore.FieldValue.serverTimestamp() },
     { merge: true },

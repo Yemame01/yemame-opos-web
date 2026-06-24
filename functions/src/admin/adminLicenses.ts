@@ -11,6 +11,7 @@ import * as admin from "firebase-admin";
 import { HttpsError, onCall, CallableRequest } from "firebase-functions/v2/https";
 import { heavyHttpOptions } from "../config/options";
 import { getDb, logAdmin } from "../utils/db";
+import { withErrorReport } from "../services/hubNotify";
 import { issueLicense } from "../licensing/issueLicense";
 
 function assertAdmin(request: CallableRequest): string {
@@ -22,7 +23,9 @@ function assertAdmin(request: CallableRequest): string {
 }
 
 /** List licenses, optionally filtered by owner or status. */
-export const adminListLicenses = onCall(heavyHttpOptions, async (request) => {
+export const adminListLicenses = onCall(
+  heavyHttpOptions,
+  withErrorReport("adminListLicenses", async (request: CallableRequest) => {
   assertAdmin(request);
   const { ownerUid, status, limit } = (request.data ?? {}) as {
     ownerUid?: string;
@@ -37,7 +40,8 @@ export const adminListLicenses = onCall(heavyHttpOptions, async (request) => {
   return {
     licenses: snap.docs.map((d) => ({ id: d.id, ...d.data() })),
   };
-});
+  }),
+);
 
 /**
  * Patch the same fields on BOTH license copies: the global mirror licenses/{id}
@@ -66,7 +70,9 @@ async function patchLicenseBoth(
 
 /** Revoke a license. Blocks NEW activations; already-activated devices keep
  * running offline (validate-once model). */
-export const adminRevokeLicense = onCall(heavyHttpOptions, async (request) => {
+export const adminRevokeLicense = onCall(
+  heavyHttpOptions,
+  withErrorReport("adminRevokeLicense", async (request: CallableRequest) => {
   const adminUid = assertAdmin(request);
   const { licenseId, reason } = (request.data ?? {}) as {
     licenseId?: string;
@@ -81,10 +87,13 @@ export const adminRevokeLicense = onCall(heavyHttpOptions, async (request) => {
   });
   await logAdmin("licenses", "revoked", { licenseId, adminUid, reason });
   return { ok: true };
-});
+  }),
+);
 
 /** Restore a revoked license. */
-export const adminRestoreLicense = onCall(heavyHttpOptions, async (request) => {
+export const adminRestoreLicense = onCall(
+  heavyHttpOptions,
+  withErrorReport("adminRestoreLicense", async (request: CallableRequest) => {
   const adminUid = assertAdmin(request);
   const { licenseId } = (request.data ?? {}) as { licenseId?: string };
   if (!licenseId) throw new HttpsError("invalid-argument", "licenseId required.");
@@ -95,12 +104,13 @@ export const adminRestoreLicense = onCall(heavyHttpOptions, async (request) => {
   });
   await logAdmin("licenses", "restored", { licenseId, adminUid });
   return { ok: true };
-});
+  }),
+);
 
 /** Adjust a license's activation allowance (e.g. goodwill, support fix). */
 export const adminAdjustActivations = onCall(
   heavyHttpOptions,
-  async (request) => {
+  withErrorReport("adminAdjustActivations", async (request: CallableRequest) => {
     const adminUid = assertAdmin(request);
     const { licenseId, maxActivations } = (request.data ?? {}) as {
       licenseId?: string;
@@ -130,11 +140,13 @@ export const adminAdjustActivations = onCall(
       maxActivations: n,
     });
     return { ok: true };
-  },
+  }),
 );
 
 /** Manually issue a license (off-platform / invoice sale). */
-export const adminIssueLicense = onCall(heavyHttpOptions, async (request) => {
+export const adminIssueLicense = onCall(
+  heavyHttpOptions,
+  withErrorReport("adminIssueLicense", async (request: CallableRequest) => {
   const adminUid = assertAdmin(request);
   const { ownerUid, packageId, maxActivations, buyerEmail } = (request.data ??
     {}) as {
@@ -164,4 +176,5 @@ export const adminIssueLicense = onCall(heavyHttpOptions, async (request) => {
     adminUid,
   });
   return issued;
-});
+  }),
+);

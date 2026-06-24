@@ -52,7 +52,6 @@ export function PaymentSuccess() {
   const router = useRouter();
   const params = useSearchParams();
   const { user } = useAuth();
-  const payment = params.get("payment");
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>("confirming");
@@ -60,14 +59,26 @@ export function PaymentSuccess() {
   const [copied, setCopied] = useState(false);
   const baselineCount = useRef<number | null>(null);
   const firedConfetti = useRef(false);
+  // Consume the ?payment param exactly once. Reading it into a ref (not state
+  // derived from params each render) + immediately stripping the URL prevents
+  // the overlay re-opening / confetti re-firing on any later re-render or
+  // back-navigation. This is what caused confetti to fire "out of the blue".
+  const consumed = useRef(false);
 
-  // Open the overlay based on the callback's ?payment= status.
+  // Open the overlay based on the callback's ?payment= status — ONCE.
   useEffect(() => {
+    if (consumed.current) return;
+    const payment = params.get("payment");
     if (!payment) return;
+    consumed.current = true;
+
     setOpen(true);
     if (payment === "success" || payment === "pending") setPhase("confirming");
-    else if (payment === "failed" || payment === "missing") setPhase("failed");
-  }, [payment]);
+    else setPhase("failed"); // failed | missing | anything unexpected
+
+    // Strip the param right away so a refresh / re-render can't re-trigger.
+    router.replace("/dashboard", { scroll: false });
+  }, [params, router]);
 
   // Watch the user's licenses; when a new one appears (webhook minted it), reveal it.
   useEffect(() => {
@@ -127,8 +138,7 @@ export function PaymentSuccess() {
 
   const close = () => {
     setOpen(false);
-    // Strip the ?payment= params so a refresh doesn't re-open the modal.
-    router.replace("/dashboard");
+    // URL param was already stripped when the overlay opened; just hide it.
   };
 
   const copy = async () => {
