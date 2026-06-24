@@ -171,9 +171,11 @@ function DownloadCards({
                     Download v{latest.version}
                   </a>
                   <p className="mt-3 text-xs text-ink/45">
-                    {fmtBytes(file.sizeBytes)} · released {fmtDate(latest.releaseDate)}
+                    {[fmtBytes(file.sizeBytes), `released ${fmtDate(latest.releaseDate)}`]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
-                  <Checksum sha={file.sha256} />
+                  {file.sha256 && <Checksum sha={file.sha256} />}
                 </>
               ) : (
                 <p className="mt-5 rounded-lg bg-black/[0.03] px-4 py-3 text-sm text-ink/50">

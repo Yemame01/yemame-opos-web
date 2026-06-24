@@ -14,9 +14,10 @@ const HISTORY_URL = `https://firebasestorage.googleapis.com/v0/b/${BUCKET}/o/${e
 export interface PlatformFile {
   url: string;
   sizeBytes: number;
-  sha256: string;
+  sha256: string; // "" for externally-hosted installers we didn't hash
   fileName: string;
   uploadedAt: string;
+  external?: boolean; // hosted elsewhere (URL) rather than in our bucket
 }
 
 export interface Release {
