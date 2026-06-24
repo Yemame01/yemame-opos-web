@@ -10,31 +10,13 @@ import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getFunctions, Functions } from "firebase/functions";
 
-// The Firebase WEB config is public by design — it ships in the browser bundle
-// and is safe to commit (security comes from Firestore/Storage rules + App
-// Check, not from hiding these). We hardcode it as a fallback so the app never
-// breaks if a deploy is missing the NEXT_PUBLIC_* env vars (which silently broke
-// signup before). Env vars still take precedence if set. Mirrors yemame-website.
-const FALLBACK = {
-  apiKey: "AIzaSyCZ3nxVIkMPy-Ah24RyEh-bXKJtZFHdXwU",
-  authDomain: "yemame-opos.firebaseapp.com",
-  projectId: "yemame-opos",
-  storageBucket: "yemame-opos.firebasestorage.app",
-  messagingSenderId: "148234079401",
-  appId: "1:148234079401:web:aee00c9665985bf7006db8",
-};
-
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || FALLBACK.apiKey,
-  authDomain:
-    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || FALLBACK.authDomain,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || FALLBACK.projectId,
-  storageBucket:
-    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || FALLBACK.storageBucket,
-  messagingSenderId:
-    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ||
-    FALLBACK.messagingSenderId,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || FALLBACK.appId,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 // A real key looks like "AIza...". A placeholder/empty key means "not configured"

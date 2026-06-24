@@ -12,6 +12,9 @@ export {
   activateLicenseHttp,
 } from "./licensing/activateLicense";
 
+// Owner releases a device from the account dashboard (frees an activation slot).
+export { deactivateDevice } from "./licensing/deactivateDevice";
+
 // ==================== WEBHOOKS (billing) ====================
 import { onRequest } from "firebase-functions/v2/https";
 import { lightHttpOptions } from "./config/options";

@@ -34,6 +34,23 @@ export interface Activation {
   platform?: string;
   active: boolean;
   activatedAt?: { seconds: number } | null;
+  // Set client-side so the Devices page knows which license a device belongs to.
+  licenseId?: string;
+  licenseKey?: string;
+}
+
+export interface Payment {
+  id: string; // = reference
+  reference: string;
+  email?: string;
+  amountMinor: number;
+  currency: string;
+  channel?: string;
+  status: "success" | string;
+  packageId?: string;
+  licenseId?: string;
+  type?: string;
+  paidAt?: { seconds: number } | null;
 }
 
 /** Format minor units (pesewas) as a GHS amount. */
