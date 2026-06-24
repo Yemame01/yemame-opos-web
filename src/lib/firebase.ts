@@ -50,3 +50,7 @@ export function requireDb(): Firestore {
   if (!db) throw new Error("Firestore is not configured.");
   return db;
 }
+export function requireFunctions(): Functions {
+  if (!functions) throw new Error("Firebase functions are not configured.");
+  return functions;
+}

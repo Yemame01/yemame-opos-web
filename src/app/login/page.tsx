@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { Brand } from "@/components/Brand";
 import { AuthShell } from "@/components/AuthShell";
+import { PasswordField } from "@/components/PasswordField";
 
 export default function LoginPage() {
   const { signIn } = useAuth();
@@ -51,13 +52,20 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="label">Password</label>
-            <input
-              type="password"
-              className="field"
+            <div className="flex items-center justify-between">
+              <label className="label">Password</label>
+              <Link
+                href="/forgot-password"
+                className="text-xs font-medium text-teal-600 hover:text-teal-700"
+              >
+                Forgot password?
+              </Link>
+            </div>
+            <PasswordField
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+              onChange={setPassword}
+              autoComplete="current-password"
+              disabled={busy}
             />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}

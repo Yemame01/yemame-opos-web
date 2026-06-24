@@ -13,6 +13,8 @@ const SHARED_SECRETS = [
   "LICENSE_SIGNING_PRIVATE_KEY",
   // Cross-project Hub notifier key (admin alerts). Optional in dev.
   "HUB_NOTIFY_KEY",
+  // Resend API key — transactional auth emails (verify, password reset, welcome).
+  "RESEND_API_KEY",
 ];
 
 // ==================== HTTP / onCall OPTIONS ====================

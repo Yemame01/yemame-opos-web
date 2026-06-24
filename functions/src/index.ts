@@ -33,3 +33,13 @@ export {
   adminAdjustActivations,
   adminIssueLicense,
 } from "./admin/adminLicenses";
+
+// ==================== AUTH EMAILS (verify / reset / welcome) ====================
+// Resend-backed transactional emails for the store's auth flows. Verification is
+// sent via the resendVerificationEmail callable right after signup (no Firestore
+// trigger needed), so the flow has no Eventarc dependency.
+export {
+  resendVerificationEmail,
+  requestPasswordReset,
+  sendWelcomeEmail,
+} from "./auth/authEmails";

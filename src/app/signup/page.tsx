@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { Brand } from "@/components/Brand";
 import { AuthShell } from "@/components/AuthShell";
+import { PasswordField } from "@/components/PasswordField";
 
 export default function SignupPage() {
   const { signUp } = useAuth();
@@ -19,20 +20,25 @@ export default function SignupPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
     setBusy(true);
     try {
       await signUp(name, email, password);
-      router.push("/buy");
+      // Account created — email a verification link is on its way.
+      router.push("/verify-email");
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code;
       setError(
         code === "auth/email-already-in-use"
           ? "That email already has an account. Try logging in."
-          : "Couldn't create your account. Please try again.",
+          : code === "auth/invalid-email"
+            ? "Please enter a valid email address."
+            : code === "auth/weak-password"
+              ? "Password is too weak. Use at least 8 characters."
+              : "Couldn't create your account. Please try again.",
       );
     } finally {
       setBusy(false);
@@ -71,13 +77,13 @@ export default function SignupPage() {
           </div>
           <div>
             <label className="label">Password</label>
-            <input
-              type="password"
-              className="field"
+            <PasswordField
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+              onChange={setPassword}
+              autoComplete="new-password"
+              disabled={busy}
             />
+            <p className="mt-1 text-xs text-ink/50">Must be at least 8 characters</p>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button className="btn-primary w-full" disabled={busy}>

@@ -10,6 +10,10 @@ export function Brand({
   showText?: boolean;
   size?: number;
 }) {
+  // Round the logo's corners so the square artwork reads as a tidy app-icon
+  // tile everywhere it appears (header, footer, auth pages). Scale the radius
+  // with the logo size so it stays proportional.
+  const radius = Math.round(size * 0.26);
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <Image
@@ -18,6 +22,7 @@ export function Brand({
         width={size}
         height={size}
         className="object-contain"
+        style={{ borderRadius: radius }}
         priority
       />
       {showText && (

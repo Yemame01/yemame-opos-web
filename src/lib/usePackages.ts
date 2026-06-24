@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { Package } from "./types";
 
-const PROJECT = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+// The project id is public (it's in every Firestore URL). Fall back to the
+// constant so the store's pricing always loads even if the env var is missing
+// from a deploy — packages are a public read and must never silently vanish.
+const PROJECT = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "yemame-opos";
 
 // One Firestore REST value (map field) → a Package.
 function pkgFromMap(m: Record<string, Record<string, unknown>>): Package {
