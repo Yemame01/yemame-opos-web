@@ -23,6 +23,7 @@ export function SiteFooter() {
             <ul className="mt-3 space-y-2 text-sm text-ink/60">
               <li><Link href="/#features" className="hover:text-teal-600">Features</Link></li>
               <li><Link href="/#packages" className="hover:text-teal-600">Pricing</Link></li>
+              <li><Link href="/download" className="hover:text-teal-600">Download app</Link></li>
               <li><Link href="/buy" className="hover:text-teal-600">Get a license</Link></li>
               <li><Link href="/dashboard" className="hover:text-teal-600">My licenses</Link></li>
             </ul>

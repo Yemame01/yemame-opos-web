@@ -33,6 +33,7 @@ export function SiteHeader() {
           <Link href="/#features" className="rounded-lg px-3 py-2 text-ink/65 transition hover:bg-teal-50 hover:text-teal-700">Features</Link>
           <Link href="/#how" className="rounded-lg px-3 py-2 text-ink/65 transition hover:bg-teal-50 hover:text-teal-700">How it works</Link>
           <Link href="/#packages" className="rounded-lg px-3 py-2 text-ink/65 transition hover:bg-teal-50 hover:text-teal-700">Pricing</Link>
+          <Link href="/download" className="rounded-lg px-3 py-2 text-ink/65 transition hover:bg-teal-50 hover:text-teal-700">Download</Link>
           <a href="https://www.yemame.com/blog" className="rounded-lg px-3 py-2 text-ink/65 transition hover:bg-teal-50 hover:text-teal-700">Blog</a>
         </nav>
 

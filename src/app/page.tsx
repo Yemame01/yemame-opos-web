@@ -482,8 +482,8 @@ export default function Home() {
               <Link href="/signup" className="rounded-full bg-white px-7 py-3.5 font-bold text-teal-700 shadow-xl transition-all hover:-translate-y-0.5 hover:bg-teal-50">
                 Get a license
               </Link>
-              <Link href="/login" className="rounded-full border-2 border-white/40 px-7 py-3.5 font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-white/10">
-                I already have an account
+              <Link href="/download" className="rounded-full border-2 border-white/40 px-7 py-3.5 font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-white/10">
+                Download the app
               </Link>
             </div>
           </div>

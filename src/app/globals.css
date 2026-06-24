@@ -6,6 +6,25 @@
   color-scheme: light;
 }
 
+html {
+  /* Animated anchor scrolling; scroll-padding offsets the sticky header so a
+     section's heading isn't hidden underneath it after jumping to #id. */
+  scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem;
+}
+
+/* Respect users who prefer no motion — instant jump instead of animated scroll. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Sections targeted by anchor nav get matching top margin as a fallback. */
+section[id] {
+  scroll-margin-top: 5.5rem;
+}
+
 html,
 body {
   @apply overflow-x-clip bg-[#f7faf9] text-ink antialiased;
