@@ -11,9 +11,11 @@ export default function PrivacyPage() {
   return (
     <LegalPage title="Privacy Policy" updated="23 June 2026">
       <p>
-        This Privacy Policy explains what information Yemame processes in
-        connection with <strong>Yemame OPOS</strong> — the account you create on
-        this website, your purchases, and license activation. Yemame OPOS is an{" "}
+        This Privacy Policy explains what information YEMAME ENTERPRISE SOLUTIONS
+        GROUP (&ldquo;Yemame&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;) processes
+        in connection with <strong>Yemame OPOS</strong> — the account you create
+        on this website, your purchases, and license activation. We are the data
+        controller for that information. Yemame OPOS is an{" "}
         <strong>offline</strong> application: your business data (sales, products,
         customers, etc.) stays on your own device and is never sent to us.
       </p>
@@ -56,9 +58,12 @@ export default function PrivacyPage() {
 
       <LegalSection heading="Service providers">
         <p>
-          We use trusted providers to run the service — including Google Firebase
-          (authentication, database, hosting) and our payment processor. They
-          process data only to provide their services to us.
+          We use trusted third-party providers to run the service — including
+          secure cloud infrastructure providers (for account hosting,
+          authentication, and storage) and a PCI-DSS compliant payment processor.
+          These providers act on our behalf under contractual confidentiality and
+          data-protection obligations, and process data only to provide their
+          services to us. We do not sell your personal information.
         </p>
       </LegalSection>
 
@@ -72,13 +77,29 @@ export default function PrivacyPage() {
         </p>
       </LegalSection>
 
+      <LegalSection heading="Changes to this policy">
+        <p>
+          We may update this Privacy Policy from time to time to reflect changes to
+          the service or applicable law. The &ldquo;Last updated&rdquo; date above
+          shows when it last changed. Your continued use of Yemame OPOS after an
+          update takes effect constitutes acceptance of the revised policy.
+        </p>
+      </LegalSection>
+
       <LegalSection heading="Contact">
         <p>
-          For privacy questions, reach us on WhatsApp at{" "}
+          For privacy questions, email{" "}
+          <a href="mailto:support@yemame.com" className="text-teal-600">
+            support@yemame.com
+          </a>{" "}
+          or reach us on WhatsApp at{" "}
           <a href="https://wa.me/233559760063" className="text-teal-600">
             +233 55 976 0063
           </a>
           .
+        </p>
+        <p className="mt-3 text-sm text-ink/50">
+          Yemame OPOS is operated by YEMAME ENTERPRISE SOLUTIONS GROUP, Accra, Ghana.
         </p>
       </LegalSection>
     </LegalPage>

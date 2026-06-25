@@ -15,9 +15,12 @@ export default function TermsPage() {
         These Terms of Service (&quot;Terms&quot;) govern your purchase and use of
         <strong> Yemame OPOS</strong> (&quot;the Software&quot;), the offline
         desktop point-of-sale application, and the activation licenses
-        (&quot;Licenses&quot;) sold through this website. By creating an account,
-        buying a License, or activating the Software, you agree to these Terms. If
-        you do not agree, do not use the Software.
+        (&quot;Licenses&quot;) sold through this website. They form a legally
+        binding agreement between you and YEMAME ENTERPRISE SOLUTIONS GROUP, the
+        operator of Yemame OPOS (&quot;Yemame&quot;, &quot;we&quot;,
+        &quot;us&quot;, or &quot;our&quot;). By creating an account, buying a
+        License, or activating the Software, you confirm you are at least 18 years
+        old and agree to these Terms. If you do not agree, do not use the Software.
       </p>
 
       <LegalSection heading="1. Buy activation keys ONLY from Yemame (important)">
@@ -109,14 +112,68 @@ export default function TermsPage() {
         </p>
       </LegalSection>
 
-      <LegalSection heading="8. Changes & contact">
+      <LegalSection heading="8. Indemnification">
+        <p>
+          You agree to indemnify, defend, and hold harmless Yemame and its owners,
+          directors, employees, and agents from and against any claims, liabilities,
+          damages, losses, and expenses (including reasonable legal fees) arising
+          from your use of the Software, your breach of these Terms, your data, or
+          your violation of any applicable law.
+        </p>
+      </LegalSection>
+
+      <LegalSection heading="9. Force majeure">
+        <p>
+          We are not liable for any failure or delay caused by events beyond our
+          reasonable control, including acts of God, natural disasters, epidemics,
+          war or civil unrest, government action, power or internet outages, or
+          failures of telecommunications, hosting, or payment providers.
+        </p>
+      </LegalSection>
+
+      <LegalSection heading="10. Governing law & disputes">
+        <p>
+          These Terms, and any dispute or claim arising out of or in connection with
+          them (including non-contractual disputes), are governed by the laws of the
+          Republic of Ghana, and you submit to the exclusive jurisdiction of the
+          courts of Ghana. Before commencing any formal proceedings, you agree to
+          contact us first and attempt in good faith to resolve the matter
+          informally, allowing at least thirty (30) days for a response. Any claim
+          must be brought within one (1) year of the event giving rise to it, to the
+          fullest extent permitted by law.
+        </p>
+      </LegalSection>
+
+      <LegalSection heading="11. General">
+        <p>
+          These Terms, together with our{" "}
+          <Link href="/privacy" className="text-teal-600">Privacy Policy</Link>,
+          are the entire agreement between you and Yemame regarding the Software and
+          supersede any prior agreements. If any provision is held unenforceable, the
+          remaining provisions stay in effect. Our failure to enforce any right is
+          not a waiver of it. You may not assign these Terms without our consent; we
+          may assign them in connection with a merger, acquisition, or sale of
+          assets. Provisions that by their nature should survive termination
+          (including licensing restrictions, disclaimers, liability limits,
+          indemnification, and governing law) survive.
+        </p>
+      </LegalSection>
+
+      <LegalSection heading="12. Changes & contact">
         <p>
           We may update these Terms from time to time; continued use after an update
-          constitutes acceptance. Questions? Contact us on WhatsApp at{" "}
+          constitutes acceptance. Questions? Email{" "}
+          <a href="mailto:support@yemame.com" className="text-teal-600">
+            support@yemame.com
+          </a>{" "}
+          or contact us on WhatsApp at{" "}
           <a href="https://wa.me/233559760063" className="text-teal-600">
             +233 55 976 0063
           </a>
           .
+        </p>
+        <p className="mt-3 text-sm text-ink/50">
+          Yemame OPOS is operated by YEMAME ENTERPRISE SOLUTIONS GROUP, Accra, Ghana.
         </p>
       </LegalSection>
     </LegalPage>

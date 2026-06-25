@@ -11,8 +11,6 @@ import {
   Sparkles,
   Wrench,
   Gauge,
-  Copy,
-  Check,
   Loader2,
 } from "lucide-react";
 import {
@@ -175,7 +173,6 @@ function DownloadCards({
                       .filter(Boolean)
                       .join(" · ")}
                   </p>
-                  {file.sha256 && <Checksum sha={file.sha256} />}
                 </>
               ) : (
                 <p className="mt-5 rounded-lg bg-black/[0.03] px-4 py-3 text-sm text-ink/50">
@@ -187,29 +184,6 @@ function DownloadCards({
         );
       })}
     </Stagger>
-  );
-}
-
-function Checksum({ sha }: { sha: string }) {
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    await navigator.clipboard.writeText(sha);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-  return (
-    <button
-      onClick={copy}
-      title="Copy SHA-256 checksum"
-      className="mt-2 inline-flex items-center gap-1.5 self-start font-mono text-[11px] text-ink/40 transition-colors hover:text-ink/70"
-    >
-      {copied ? (
-        <Check className="h-3 w-3 text-teal-500" />
-      ) : (
-        <Copy className="h-3 w-3" />
-      )}
-      sha256: {sha.slice(0, 16)}…
-    </button>
   );
 }
 
