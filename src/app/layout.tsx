@@ -140,6 +140,8 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
+        {/* Paystack inline checkout — opens an in-page dialog (no redirect). */}
+        <script src="https://js.paystack.co/v1/inline.js" async />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

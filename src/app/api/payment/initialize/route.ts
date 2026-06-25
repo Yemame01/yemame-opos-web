@@ -75,6 +75,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Suite-standard descriptive reference: yo_opos_license_<ts>_<rand>.
+    // Opaque downstream (the webhook keys idempotency on it), but makes the
+    // charge self-describing in Paystack/gateway logs.
+    const reference = `yo_opos_license_${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2, 10)}`;
+
     const data = await initializeTransaction({
       email: user.email,
       amountMinor: pkg.priceMinor,
@@ -82,11 +89,21 @@ export async function POST(request: NextRequest) {
       // uid is the VERIFIED uid — the webhook mints to exactly this account.
       metadata: { product: "opos", type: "opos_license", uid: user.uid, packageId },
       callbackUrl: `${siteUrl()}/api/payment/callback`,
+      reference,
     });
 
     return NextResponse.json({
+      // access_code powers the inline popup (no redirect); authorization_url is
+      // kept as a fallback for environments where the inline SDK can't load.
+      access_code: data.access_code,
       authorization_url: data.authorization_url,
       reference: data.reference,
+      // The inline popup needs email + amount in its OWN config even when
+      // resuming via access_code — without them Paystack errors "Please enter a
+      // valid email address" (this is exactly what yemame-pos passes too). Both
+      // are server-verified/derived, so the client can't tamper with them.
+      email: user.email,
+      amount: pkg.priceMinor, // pesewas (minor units)
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Internal error";

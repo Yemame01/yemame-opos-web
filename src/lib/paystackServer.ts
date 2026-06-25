@@ -14,6 +14,12 @@ export interface InitializeParams {
   amountMinor: number; // pesewas
   metadata: Record<string, unknown>;
   callbackUrl: string;
+  /**
+   * Optional caller-supplied reference. When omitted, Paystack auto-generates
+   * one. Provide a suite-standard `<prefix>_<type>_<ts>_<rand>` reference so the
+   * charge is self-describing in Paystack/gateway logs.
+   */
+  reference?: string;
 }
 
 export interface InitializeResult {
@@ -39,6 +45,7 @@ export async function initializeTransaction(
       metadata: params.metadata,
       callback_url: params.callbackUrl,
       channels: ["card", "mobile_money", "bank"],
+      ...(params.reference ? { reference: params.reference } : {}),
     }),
   });
   const json = await res.json();

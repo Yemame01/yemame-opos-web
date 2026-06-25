@@ -17,7 +17,7 @@ import { PaystackWebhookEvent } from "../types";
 import { getDb, logAdmin } from "../../../utils/db";
 import { getPackage } from "../../../config/packages";
 import { issueLicense } from "../../../licensing/issueLicense";
-import { notifyHub, reportServerError } from "../../../services/hubNotify";
+import { reportServerError } from "../../../services/hubNotify";
 
 export async function handleChargeSuccess(
   event: PaystackWebhookEvent,
@@ -150,20 +150,16 @@ export async function handleChargeSuccess(
     );
     await batch.commit();
 
+    // A license purchase is a normal business event, NOT an admin alert. It is
+    // recorded as a Hub activity here (surfaced on the OPOS Activity page); we
+    // deliberately do NOT fire notifyHub for it. Admin alerts/pushes are
+    // reserved for function/critical errors (see reportServerError below).
     await logAdmin("payments", "license_issued", {
       reference,
       uid,
       packageId,
       licenseId: issued.licenseId,
       amountMinor: amount,
-    });
-
-    // Best-effort admin alert (no-ops until Hub key is set).
-    void notifyHub({
-      title: "OPOS license sold",
-      body: `${customer.email} bought ${activations} activations.`,
-      type: "payment",
-      data: { reference, licenseId: issued.licenseId, packageId },
     });
 
     console.log(

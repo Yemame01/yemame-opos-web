@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Loader2, ShieldCheck, WifiOff } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { usePackages } from "@/lib/usePackages";
@@ -9,6 +10,7 @@ import { PageHeader } from "@/components/account/ui";
 
 export default function BuyPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const { packages, loading: pkgLoading } = usePackages();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -18,6 +20,10 @@ export default function BuyPage() {
     setError("");
     setBusyId(packageId);
     try {
+      // The SERVER initializes the transaction (verifies the buyer's ID token,
+      // re-derives the price, tags metadata.uid) and returns an access_code. We
+      // resume that exact transaction in an inline popup — no redirect, and the
+      // amount/uid can't be tampered with client-side.
       const idToken = await user.getIdToken();
       const res = await fetch("/api/payment/initialize", {
         method: "POST",
@@ -29,7 +35,47 @@ export default function BuyPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Couldn't start checkout.");
-      window.location.href = data.authorization_url;
+
+      const reference: string = data.reference;
+
+      if (typeof window === "undefined" || !window.PaystackPop) {
+        // Inline SDK unavailable (e.g. blocked script) — fall back to the
+        // hosted page so checkout still works.
+        if (data.authorization_url) {
+          window.location.href = data.authorization_url;
+          return;
+        }
+        throw new Error("Checkout couldn't start. Please refresh and try again.");
+      }
+
+      // Resume the server-created transaction in the inline dialog. We pass
+      // email + amount + currency alongside access_code — Paystack's inline SDK
+      // validates these in its OWN config and errors "Please enter a valid email
+      // address" when they're absent (yemame-pos passes the same three).
+      const setupConfig: PaystackPopupOptions = {
+        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY as string,
+        access_code: data.access_code,
+        currency: "GHS",
+        callback: () => {
+          // Paid — hand off to the dashboard, which shows the confetti success
+          // overlay and waits for the webhook to mint the key.
+          router.push(
+            `/dashboard?payment=success&ref=${encodeURIComponent(reference)}`,
+          );
+        },
+        onClose: () => {
+          // User dismissed the dialog without paying.
+          setBusyId(null);
+        },
+      };
+      // The email comes from the server-verified token (data.email); fall back to
+      // the signed-in user's email so it's never blank.
+      const email = data.email || user.email || "";
+      if (email) setupConfig.email = email;
+      if (data.amount) setupConfig.amount = data.amount;
+
+      const handler = window.PaystackPop.setup(setupConfig);
+      handler.openIframe();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setBusyId(null);
