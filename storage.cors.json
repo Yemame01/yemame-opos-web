@@ -1,0 +1,13 @@
+[
+  {
+    "origin": [
+      "https://opos.yemame.com",
+      "https://www.yemame.com",
+      "https://yemame.com",
+      "http://localhost:3000"
+    ],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type", "Content-Length", "Cache-Control"],
+    "maxAgeSeconds": 3600
+  }
+]
