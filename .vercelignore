@@ -1,0 +1,20 @@
+# Firebase Functions are deployed to Firebase, not Vercel
+functions/
+
+# Local scripts (seeding, release tooling) — not part of the web deploy
+scripts/
+
+# Secrets / admin credentials — never bundle into a deploy
+service-account.json
+*service-account*.json
+*-adminsdk-*.json
+*.p8
+*.pfx
+*.pem
+.env*
+
+# Standard
+node_modules/
+.git/
+.next/
+docs/
