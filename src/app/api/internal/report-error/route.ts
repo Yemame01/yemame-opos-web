@@ -1,4 +1,4 @@
-// src/app/api/_internal/report-error/route.ts
+// src/app/api/internal/report-error/route.ts
 //
 // Internal relay so CLIENT-side error reports reach the Hub without exposing the
 // HUB_NOTIFY_KEY secret to the browser. The browser posts a small JSON payload
