@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyTransaction } from "@/lib/paystackServer";
 import { siteUrl } from "@/lib/siteUrl";
+import { reportServerError } from "@/lib/hubNotify";
 
 export async function GET(request: NextRequest) {
   const reference = request.nextUrl.searchParams.get("reference");
@@ -22,9 +23,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(
       `${base}/dashboard?payment=${ok ? "success" : "failed"}&ref=${encodeURIComponent(reference)}`,
     );
-  } catch {
+  } catch (error: unknown) {
     // Even if verify hiccups, the webhook will still mint on success — send the
     // buyer to the dashboard to see their licenses.
+    reportServerError("api/payment/callback", error, {
+      reference: request.nextUrl.searchParams.get("reference") ?? "",
+    });
     return NextResponse.redirect(`${base}/dashboard?payment=pending`);
   }
 }

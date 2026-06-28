@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { initializeTransaction } from "@/lib/paystackServer";
 import { verifyIdToken, bearerToken } from "@/lib/verifyIdToken";
 import { siteUrl } from "@/lib/siteUrl";
+import { reportServerError } from "@/lib/hubNotify";
 
 // Read the package from adminConfig/general.packages via the REST API (the
 // config doc is world-readable). Server re-derives the price — never trusts the
@@ -106,6 +107,7 @@ export async function POST(request: NextRequest) {
       amount: pkg.priceMinor, // pesewas (minor units)
     });
   } catch (error: unknown) {
+    reportServerError("api/payment/initialize", error);
     const msg = error instanceof Error ? error.message : "Internal error";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
