@@ -29,3 +29,38 @@ export async function verifyPaystackTransaction(
   }
   return json.data;
 }
+
+/** A successful Paystack transaction as returned by the list endpoint. */
+export interface PaystackListTxn {
+  reference: string;
+  amount: number;
+  paid_at?: string;
+  status: string;
+  customer?: { email?: string };
+  metadata?: { product?: string; uid?: string; packageId?: string; type?: string };
+}
+
+/**
+ * List recent SUCCESSFUL Paystack transactions (newest first). Used by the admin
+ * "unfulfilled payments" finder to spot charges that never minted a license.
+ */
+export async function listSuccessfulTransactions(
+  perPage = 100,
+): Promise<PaystackListTxn[]> {
+  const secret = process.env.PAYSTACK_SECRET_KEY;
+  if (!secret) throw new Error("PAYSTACK_SECRET_KEY not configured");
+
+  const url = `${PAYSTACK_API}/transaction?status=success&perPage=${perPage}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${secret}` },
+  });
+  const json = (await res.json()) as {
+    status?: boolean;
+    message?: string;
+    data?: PaystackListTxn[];
+  };
+  if (!json.status || !Array.isArray(json.data)) {
+    throw new Error(json.message || "Paystack transaction list failed");
+  }
+  return json.data;
+}

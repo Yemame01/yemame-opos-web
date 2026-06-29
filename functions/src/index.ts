@@ -44,6 +44,9 @@ export {
   adminIssueLicense,
 } from "./admin/adminLicenses";
 
+// Find successful Paystack charges that never minted a license (charged-but-no-key).
+export { adminListUnfulfilledPayments } from "./admin/adminUnfulfilled";
+
 // ==================== AUTH EMAILS (verify / reset / welcome) ====================
 // Resend-backed transactional emails for the store's auth flows. Verification is
 // sent via the resendVerificationEmail callable right after signup (no Firestore

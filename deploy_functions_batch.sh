@@ -33,6 +33,7 @@ ALL_FUNCTIONS=(
   "adminRestoreLicense"
   "adminAdjustActivations"
   "adminIssueLicense"
+  "adminListUnfulfilledPayments"
 )
 
 display_header() {
