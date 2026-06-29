@@ -18,7 +18,8 @@ import {
   X,
 } from "lucide-react";
 import { collection, onSnapshot, query } from "firebase/firestore";
-import { firebaseReady, requireDb } from "@/lib/firebase";
+import { httpsCallable } from "firebase/functions";
+import { firebaseReady, requireDb, requireFunctions } from "@/lib/firebase";
 import { useAuth } from "@/lib/useAuth";
 import { License } from "@/lib/types";
 
@@ -59,6 +60,10 @@ export function PaymentSuccess() {
   const [copied, setCopied] = useState(false);
   const baselineCount = useRef<number | null>(null);
   const firedConfetti = useRef(false);
+  // Paystack reference from the callback redirect (?ref=…), used by the
+  // fallback-mint if the webhook is missed.
+  const paymentRef = useRef<string | null>(null);
+  const triedFallback = useRef(false);
   // Consume the ?payment param exactly once. Reading it into a ref (not state
   // derived from params each render) + immediately stripping the URL prevents
   // the overlay re-opening / confetti re-firing on any later re-render or
@@ -71,6 +76,7 @@ export function PaymentSuccess() {
     const payment = params.get("payment");
     if (!payment) return;
     consumed.current = true;
+    paymentRef.current = params.get("ref");
 
     setOpen(true);
     if (payment === "success" || payment === "pending") setPhase("confirming");
@@ -116,6 +122,25 @@ export function PaymentSuccess() {
       () => {},
     );
     return () => unsub();
+  }, [open, phase, user]);
+
+  // FALLBACK MINT: the webhook is the primary path, but if it's missed the buyer
+  // would be charged with no key. After a short grace period (give the webhook a
+  // head start to avoid racing it), actively ask the server to fulfill THIS
+  // payment by reference. It's idempotent — if the webhook already minted, this
+  // no-ops; otherwise it mints now and the licenses watcher above reveals the key.
+  useEffect(() => {
+    if (!open || phase !== "confirming" || !user || !firebaseReady) return;
+    if (!paymentRef.current || triedFallback.current) return;
+    const t = setTimeout(() => {
+      if (triedFallback.current) return;
+      triedFallback.current = true;
+      const fn = httpsCallable(requireFunctions(), "fulfillPaymentByReference");
+      fn({ reference: paymentRef.current }).catch(() => {
+        // Best-effort — the pending UI + admin reissue cover any failure.
+      });
+    }, 6000);
+    return () => clearTimeout(t);
   }, [open, phase, user]);
 
   // The webhook usually lands in seconds; if it's slow, fall back to a softer

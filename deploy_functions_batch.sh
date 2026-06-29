@@ -23,6 +23,10 @@ ALL_FUNCTIONS=(
   # Payment webhook (Paystack → gateway → here)
   "paystackWebhook"
 
+  # Fallback fulfillment by reference (missed-webhook safety net)
+  "fulfillPaymentByReference"
+  "adminReissueByReference"
+
   # Admin (Hub-facing, admin-claim gated)
   "adminListLicenses"
   "adminRevokeLicense"

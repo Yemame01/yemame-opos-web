@@ -15,6 +15,13 @@ export {
 // Owner releases a device from the account dashboard (frees an activation slot).
 export { deactivateDevice } from "./licensing/deactivateDevice";
 
+// Fallback fulfillment by reference — if the charge.success webhook is missed,
+// the buyer (or an admin) can still get the license minted. Idempotent.
+export {
+  fulfillPaymentByReference,
+  adminReissueByReference,
+} from "./licensing/fulfillByReference";
+
 // ==================== WEBHOOKS (billing) ====================
 import { onRequest } from "firebase-functions/v2/https";
 import { lightHttpOptions } from "./config/options";
