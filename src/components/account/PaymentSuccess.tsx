@@ -100,18 +100,13 @@ export function PaymentSuccess() {
           (a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0),
         )[0];
 
-        // Establish a baseline on the first snapshot. Two ways to detect the new
-        // key: (a) the license count increases after baseline, or (b) the webhook
-        // already landed and the newest license was created in the last 2 min.
+        // Establish a baseline on the FIRST snapshot, then only celebrate when a
+        // genuinely NEW license appears DURING this overlay session (count goes
+        // up vs. the baseline). We deliberately do NOT use a "created in the last
+        // N minutes" heuristic — that re-fired the success overlay/confetti just
+        // for navigating back to the dashboard after any recent purchase.
         if (baselineCount.current === null) {
           baselineCount.current = licenses.length;
-          const fresh =
-            newest?.createdAt?.seconds &&
-            Date.now() / 1000 - newest.createdAt.seconds < 120;
-          if (fresh) {
-            setNewKey(newest.key);
-            setPhase("ready");
-          }
           return;
         }
         if (licenses.length > baselineCount.current) {
@@ -153,9 +148,11 @@ export function PaymentSuccess() {
     return () => clearTimeout(t);
   }, [phase]);
 
-  // Fire confetti once we reach a happy state.
+  // Fire confetti ONLY when a key is actually revealed (phase "ready"). "pending"
+  // means the payment landed but the key isn't shown yet — show the calm message,
+  // don't celebrate. This keeps confetti tied to a real, confirmed success.
   useEffect(() => {
-    if ((phase === "ready" || phase === "pending") && !firedConfetti.current) {
+    if (phase === "ready" && !firedConfetti.current) {
       firedConfetti.current = true;
       burst();
     }
