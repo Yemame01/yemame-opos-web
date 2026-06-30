@@ -39,15 +39,26 @@ export function generateLicenseKey(): string {
  * Normalize user-entered keys for lookup: uppercase, strip spaces, and map the
  * characters people commonly mistype to their Crockford equivalents
  * (I/L→1, O→0, U→V). Keeps dashes. Lets a buyer type loosely and still match.
+ *
+ * CRITICAL: only the CODE portion is char-mapped — never the "YMOP" prefix. The
+ * prefix legitimately contains an "O", so applying O→0 across the whole string
+ * turned "YMOP" into "YM0P" and NO key ever matched (every activation failed).
  */
 export function normalizeLicenseKey(raw: string): string {
-  return raw
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, "")
-    .replace(/I|L/g, "1")
-    .replace(/O/g, "0")
-    .replace(/U/g, "V");
+  const cleaned = raw.trim().toUpperCase().replace(/\s+/g, "");
+  const mapCode = (s: string) =>
+    s
+      .replace(/I|L/g, "1")
+      .replace(/O/g, "0")
+      .replace(/U/g, "V");
+
+  // Split off the literal product prefix so its "O" is preserved; map only the
+  // rest (the random Crockford-base32 code).
+  if (cleaned.startsWith(`${PREFIX}-`)) {
+    return `${PREFIX}-${mapCode(cleaned.slice(PREFIX.length + 1))}`;
+  }
+  // No recognizable prefix typed — best-effort map the whole thing.
+  return mapCode(cleaned);
 }
 
 /** Shape check (does NOT prove the key exists — that's a Firestore lookup). */

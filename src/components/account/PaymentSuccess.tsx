@@ -217,7 +217,13 @@ export function PaymentSuccess() {
                 )}
               </button>
             )}
-            <button onClick={close} className="btn-primary mt-5 w-full justify-center">
+            <button
+              onClick={() => {
+                setOpen(false);
+                router.push("/licenses");
+              }}
+              className="btn-primary mt-5 w-full justify-center"
+            >
               View my licenses
             </button>
           </>
