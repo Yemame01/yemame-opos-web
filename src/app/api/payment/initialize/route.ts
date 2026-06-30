@@ -83,28 +83,37 @@ export async function POST(request: NextRequest) {
       .toString(36)
       .slice(2, 10)}`;
 
+    // Server-owned metadata. product:"opos" lets the shared gateway route this
+    // charge to yemame-opos; uid is the VERIFIED uid so the webhook mints to
+    // exactly this account. The client passes this SAME object into the inline
+    // popup (mirrors yemame-pos), and the webhook re-derives the price from
+    // packageId — so a tampered client amount is still rejected at mint time.
+    const metadata = {
+      product: "opos",
+      type: "opos_license",
+      uid: user.uid,
+      packageId,
+    };
+
     const data = await initializeTransaction({
       email: user.email,
       amountMinor: pkg.priceMinor,
-      // product:"opos" lets the shared gateway route this charge to yemame-opos.
-      // uid is the VERIFIED uid — the webhook mints to exactly this account.
-      metadata: { product: "opos", type: "opos_license", uid: user.uid, packageId },
+      metadata,
       callbackUrl: `${siteUrl()}/api/payment/callback`,
       reference,
     });
 
     return NextResponse.json({
-      // access_code powers the inline popup (no redirect); authorization_url is
-      // kept as a fallback for environments where the inline SDK can't load.
-      access_code: data.access_code,
+      // authorization_url is the hosted-page fallback if the inline SDK can't load.
       authorization_url: data.authorization_url,
       reference: data.reference,
-      // The inline popup needs email + amount in its OWN config even when
-      // resuming via access_code — without them Paystack errors "Please enter a
-      // valid email address" (this is exactly what yemame-pos passes too). Both
-      // are server-verified/derived, so the client can't tamper with them.
+      // The client passes email + amount + ref + metadata DIRECTLY into the inline
+      // popup (yemame-pos pattern) so Paystack records them on the transaction →
+      // the gateway can route it and the webhook can mint. All server-derived, so
+      // the client can't tamper (the webhook also re-checks the price).
       email: user.email,
       amount: pkg.priceMinor, // pesewas (minor units)
+      metadata,
     });
   } catch (error: unknown) {
     reportServerError("api/payment/initialize", error);

@@ -20,10 +20,14 @@ export default function BuyPage() {
     setError("");
     setBusyId(packageId);
     try {
-      // The SERVER initializes the transaction (verifies the buyer's ID token,
-      // re-derives the price, tags metadata.uid) and returns an access_code. We
-      // resume that exact transaction in an inline popup — no redirect, and the
-      // amount/uid can't be tampered with client-side.
+      // The SERVER derives the price + reference + metadata (verifies the buyer's
+      // ID token, reads the package price, tags product:"opos" + uid + packageId).
+      // The client then opens the inline popup the SAME way yemame-pos does —
+      // passing `ref` + `metadata` DIRECTLY into setup() so Paystack records them
+      // on the transaction. (The v1 inline SDK only honours metadata/ref when
+      // they're passed here; resuming via access_code drops them — which is what
+      // caused "unspecified product" charges with no license.) The webhook
+      // re-derives the price from packageId, so a tampered amount is still caught.
       const idToken = await user.getIdToken();
       const res = await fetch("/api/payment/initialize", {
         method: "POST",
@@ -39,8 +43,8 @@ export default function BuyPage() {
       const reference: string = data.reference;
 
       if (typeof window === "undefined" || !window.PaystackPop) {
-        // Inline SDK unavailable (e.g. blocked script) — fall back to the
-        // hosted page so checkout still works.
+        // Inline SDK unavailable (e.g. blocked script) — fall back to the hosted
+        // page so checkout still works (it preserves metadata server-side).
         if (data.authorization_url) {
           window.location.href = data.authorization_url;
           return;
@@ -48,33 +52,23 @@ export default function BuyPage() {
         throw new Error("Checkout couldn't start. Please refresh and try again.");
       }
 
-      // Resume the server-created transaction in the inline dialog. We pass
-      // email + amount + currency alongside access_code — Paystack's inline SDK
-      // validates these in its OWN config and errors "Please enter a valid email
-      // address" when they're absent (yemame-pos passes the same three).
-      const setupConfig: PaystackPopupOptions = {
+      const handler = window.PaystackPop.setup({
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY as string,
-        access_code: data.access_code,
+        email: data.email || user.email || "",
+        amount: data.amount,
+        ref: reference,
         currency: "GHS",
+        metadata: data.metadata, // { product:"opos", type, uid, packageId }
+        callback_url: `${window.location.origin}/api/payment/callback`,
         callback: () => {
-          // Paid — hand off to the dashboard, which shows the confetti success
-          // overlay and waits for the webhook to mint the key.
+          // Paid — hand off to the dashboard; the success overlay watches for the
+          // minted key (and triggers the fallback-mint if the webhook is slow).
           router.push(
             `/dashboard?payment=success&ref=${encodeURIComponent(reference)}`,
           );
         },
-        onClose: () => {
-          // User dismissed the dialog without paying.
-          setBusyId(null);
-        },
-      };
-      // The email comes from the server-verified token (data.email); fall back to
-      // the signed-in user's email so it's never blank.
-      const email = data.email || user.email || "";
-      if (email) setupConfig.email = email;
-      if (data.amount) setupConfig.amount = data.amount;
-
-      const handler = window.PaystackPop.setup(setupConfig);
+        onClose: () => setBusyId(null),
+      });
       handler.openIframe();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
